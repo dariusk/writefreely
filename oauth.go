@@ -30,19 +30,23 @@ import (
 
 // OAuthButtons holds display information for different OAuth providers we support.
 type OAuthButtons struct {
-	SlackEnabled      bool
-	WriteAsEnabled    bool
-	GitLabEnabled     bool
-	GitLabDisplayName string
+	SlackEnabled        bool
+	WriteAsEnabled      bool
+	GitLabEnabled       bool
+	GitLabDisplayName   string
+	MastodonEnabled     bool
+	MastodonDisplayName string
 }
 
 // NewOAuthButtons creates a new OAuthButtons struct based on our app configuration.
 func NewOAuthButtons(cfg *config.Config) *OAuthButtons {
 	return &OAuthButtons{
-		SlackEnabled:      cfg.SlackOauth.ClientID != "",
-		WriteAsEnabled:    cfg.WriteAsOauth.ClientID != "",
-		GitLabEnabled:     cfg.GitlabOauth.ClientID != "",
-		GitLabDisplayName: config.OrDefaultString(cfg.GitlabOauth.DisplayName, gitlabDisplayName),
+		SlackEnabled:        cfg.SlackOauth.ClientID != "",
+		WriteAsEnabled:      cfg.WriteAsOauth.ClientID != "",
+		GitLabEnabled:       cfg.GitlabOauth.ClientID != "",
+		GitLabDisplayName:   config.OrDefaultString(cfg.GitlabOauth.DisplayName, gitlabDisplayName),
+		MastodonEnabled:     cfg.MastodonOauth.ClientID != "",
+		MastodonDisplayName: config.OrDefaultString(cfg.MastodonOauth.DisplayName, mastodonDisplayName),
 	}
 }
 
@@ -227,6 +231,34 @@ func configureGitlabOauth(parentHandler *Handler, r *mux.Router, app *App) {
 			ClientSecret:     app.Config().GitlabOauth.ClientSecret,
 			ExchangeLocation: address + "/oauth/token",
 			InspectLocation:  address + "/api/v4/user",
+			AuthLocation:     address + "/oauth/authorize",
+			HttpClient:       config.DefaultHTTPClient(),
+			CallbackLocation: callbackLocation,
+		}
+		configureOauthRoutes(parentHandler, r, app, oauthClient, callbackProxy)
+	}
+}
+
+func configureMastodonOauth(parentHandler *Handler, r *mux.Router, app *App) {
+	if app.Config().MastodonOauth.ClientID != "" {
+		callbackLocation := app.Config().App.Host + "/oauth/callback/mastodon"
+
+		var callbackProxy *callbackProxyClient = nil
+		if app.Config().MastodonOauth.CallbackProxy != "" {
+			callbackProxy = &callbackProxyClient{
+				server:           app.Config().GitlabOauth.CallbackProxyAPI,
+				callbackLocation: app.Config().App.Host + "/oauth/callback/mastodon",
+				httpClient:       config.DefaultHTTPClient(),
+			}
+			callbackLocation = app.Config().MastodonOauth.CallbackProxy
+		}
+
+		address := config.OrDefaultString(app.Config().MastodonOauth.Host, mastodonHost)
+		oauthClient := mastodonOauthClient{
+			ClientID:         app.Config().MastodonOauth.ClientID,
+			ClientSecret:     app.Config().MastodonOauth.ClientSecret,
+			ExchangeLocation: address + "/oauth/token",
+			InspectLocation:  address + "/api/v1/accounts/verify_credentials",
 			AuthLocation:     address + "/oauth/authorize",
 			HttpClient:       config.DefaultHTTPClient(),
 			CallbackLocation: callbackLocation,

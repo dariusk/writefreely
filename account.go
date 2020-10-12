@@ -299,14 +299,16 @@ func viewLogin(app *App, w http.ResponseWriter, r *http.Request) error {
 
 	p := &struct {
 		page.StaticPage
-		To                string
-		Message           template.HTML
-		Flashes           []template.HTML
-		LoginUsername     string
-		OauthSlack        bool
-		OauthWriteAs      bool
-		OauthGitlab       bool
-		GitlabDisplayName string
+		To                  string
+		Message             template.HTML
+		Flashes             []template.HTML
+		LoginUsername       string
+		OauthSlack          bool
+		OauthWriteAs        bool
+		OauthGitlab         bool
+		GitlabDisplayName   string
+		OauthMastodon       bool
+		MastodonDisplayName string
 	}{
 		pageForReq(app, r),
 		r.FormValue("to"),
@@ -317,6 +319,8 @@ func viewLogin(app *App, w http.ResponseWriter, r *http.Request) error {
 		app.Config().WriteAsOauth.ClientID != "",
 		app.Config().GitlabOauth.ClientID != "",
 		config.OrDefaultString(app.Config().GitlabOauth.DisplayName, gitlabDisplayName),
+		app.Config().MastodonOauth.ClientID != "",
+		config.OrDefaultString(app.Config().MastodonOauth.DisplayName, mastodonDisplayName),
 	}
 
 	if earlyError != "" {
@@ -1045,6 +1049,7 @@ func viewSettings(app *App, u *User, w http.ResponseWriter, r *http.Request) err
 	enableOauthSlack := app.Config().SlackOauth.ClientID != ""
 	enableOauthWriteAs := app.Config().WriteAsOauth.ClientID != ""
 	enableOauthGitLab := app.Config().GitlabOauth.ClientID != ""
+	enableOauthMastodon := app.Config().MastodonOauth.ClientID != ""
 
 	oauthAccounts, err := app.db.GetOauthAccounts(r.Context(), u.ID)
 	if err != nil {
@@ -1059,23 +1064,27 @@ func viewSettings(app *App, u *User, w http.ResponseWriter, r *http.Request) err
 			enableOauthWriteAs = false
 		case "gitlab":
 			enableOauthGitLab = false
+		case "mastodon":
+			enableOauthMastodon = false
 		}
 	}
 
-	displayOauthSection := enableOauthSlack || enableOauthWriteAs || enableOauthGitLab || len(oauthAccounts) > 0
+	displayOauthSection := enableOauthSlack || enableOauthWriteAs || enableOauthGitLab || enableOauthMastodon || len(oauthAccounts) > 0
 
 	obj := struct {
 		*UserPage
-		Email             string
-		HasPass           bool
-		IsLogOut          bool
-		Silenced          bool
-		OauthSection      bool
-		OauthAccounts     []oauthAccountInfo
-		OauthSlack        bool
-		OauthWriteAs      bool
-		OauthGitLab       bool
-		GitLabDisplayName string
+		Email               string
+		HasPass             bool
+		IsLogOut            bool
+		Silenced            bool
+		OauthSection        bool
+		OauthAccounts       []oauthAccountInfo
+		OauthSlack          bool
+		OauthWriteAs        bool
+		OauthGitLab         bool
+		GitLabDisplayName   string
+		OauthMastodon       bool
+		MastodonDisplayName string
 	}{
 		UserPage:          NewUserPage(app, r, u, "Account Settings", flashes),
 		Email:             fullUser.EmailClear(app.keys),
@@ -1088,6 +1097,8 @@ func viewSettings(app *App, u *User, w http.ResponseWriter, r *http.Request) err
 		OauthWriteAs:      enableOauthWriteAs,
 		OauthGitLab:       enableOauthGitLab,
 		GitLabDisplayName: config.OrDefaultString(app.Config().GitlabOauth.DisplayName, gitlabDisplayName),
+		OauthMastodon:       enableOauthMastodon,
+		MastodonDisplayName: config.OrDefaultString(app.Config().MastodonOauth.DisplayName, mastodonDisplayName),
 	}
 
 	showUserPage(w, "settings", obj)

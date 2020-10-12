@@ -93,7 +93,7 @@ h3 { font-weight: normal; }
             {{ end }}
 		</div>
 		{{ end }}
-		{{ if or .OauthSlack .OauthWriteAs .OauthGitLab }}
+		{{ if or .OauthSlack .OauthWriteAs .OauthGitLab .OauthMastodon }}
 		<div class="option">
 			<h2>Link External Accounts</h2>
 			<p>Connect additional accounts to enable logging in with those providers, instead of using your username and password.</p>
@@ -119,6 +119,14 @@ h3 { font-weight: normal; }
 					<img src="/img/mark/gitlab.png" alt="GitLab" />
 					<a class="btn cta loginbtn" id="gitlab-login" href="/oauth/gitlab?attach=t">
 						Link <strong>{{.GitLabDisplayName}}</strong>
+					</a>
+				</div>
+            {{ end }}
+            {{ if .OauthMastodon }}
+				<div class="section oauth-provider">
+					<img src="/img/mark/mastodon.png" alt="Mastodon" />
+					<a class="btn cta loginbtn" id="mastodon-login" href="/oauth/mastodon?attach=t">
+						Link <strong>{{.MastodonDisplayName}}</strong>
 					</a>
 				</div>
             {{ end }}
